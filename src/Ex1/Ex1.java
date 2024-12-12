@@ -1,98 +1,117 @@
 package Ex1;
 
 public class Ex1 {
+
     /**
-     * Checks if a given string represents a valid number format.
-     * A valid number must follow the pattern: <number><b><base>.
-     * Example: "101b2" (binary), "ABb16" (hexadecimal).
-     * Invalid examples: "b2", "123b", "GbG".
+     * Checks if a given string is in the correct format of a number with a base.
+     * A valid format is like "101b2" or "A1b16".
+     * Returns false for invalid formats like "123b", "b2", or null.
      */
-    public static boolean isNumber(String a) {
-        if (a == null || a.isEmpty()) {
-            return false; // A null or empty string cannot be a valid number.
+    public static boolean isNumber(String num) {
+        if (num == null || !num.contains("b")) {
+            return false;
         }
-        // Regular expression to match the valid number format.
-        String regex = "^[0-9A-F]+b[2-9A-G]$";
-        return a.matches(regex);
+        int indexOfB = num.indexOf('b');
+        if (indexOfB == 0 || indexOfB == num.length() - 1) {
+            return false;
+        }
+
+        String numberPart = num.substring(0, indexOfB);
+        String basePart = num.substring(indexOfB + 1);
+
+        try {
+            int base = Integer.parseInt(basePart);
+            if (base < 2 || base > 16) {
+                return false; // Base should be between 2 and 16
+            }
+            for (char digit : numberPart.toCharArray()) {
+                int value = Character.isDigit(digit) ? digit - '0' : Character.toUpperCase(digit) - 'A' + 10;
+                if (value >= base) {
+                    return false; // Digit is invalid for the given base
+                }
+            }
+        } catch (NumberFormatException e) {
+            return false; // Base is not a number
+        }
+        return true;
     }
 
     /**
-     * Converts a valid number string to its decimal (base 10) value.
-     * If the string is invalid, returns -1.
-     * Example: "1011b2" -> 11 (binary to decimal).
+     * Converts a valid number string (like "101b2") into its decimal value.
+     * Returns -1 if the input is invalid or cannot be converted.
      */
     public static int number2Int(String num) {
         if (!isNumber(num)) {
-            return -1; // Return -1 for invalid numbers.
+            return -1; // Return -1 for invalid numbers
         }
-        // Separate the number and base parts.
+
         int indexOfB = num.indexOf('b');
-        String numberPart = num.substring(0, indexOfB); // The digits.
-        String basePart = num.substring(indexOfB + 1); // The base.
-        int base = Character.isDigit(basePart.charAt(0)) ? Integer.parseInt(basePart) : basePart.charAt(0) - 'A' + 10;
+        String numberPart = num.substring(0, indexOfB); // Extract the part before 'b'
+        int base = Integer.parseInt(num.substring(indexOfB + 1)); // Extract the base after 'b'
 
-        // Convert the number part to decimal.
-        int result = 0;
-        for (char digit : numberPart.toCharArray()) {
-            int value = Character.isDigit(digit) ? digit - '0' : digit - 'A' + 10;
-            result = result * base + value;
+        try {
+            return Integer.parseInt(numberPart, base); // Convert the number to decimal
+        } catch (NumberFormatException e) {
+            return -1; // Error in conversion
         }
-        return result;
-    }
-
-    /**
-     * Converts a decimal number to its representation in a given base.
-     * If the input number is negative or the base is invalid, returns an empty string.
-     * Example: 11 in base 2 -> "1011".
-     */
-    public static String int2Number(int num, int base) {
-        if (num < 0 || base < 2 || base > 16) {
-            return ""; // Return an empty string for invalid input.
-        }
-        StringBuilder result = new StringBuilder();
-        // Convert using repeated division and remainders.
-        do {
-            int remainder = num % base;
-            if (remainder < 10) {
-                result.append((char) ('0' + remainder));
-            } else {
-                result.append((char) ('A' + remainder - 10));
-            }
-            num /= base;
-        } while (num > 0);
-        return result.reverse().toString(); // Reverse to get the correct order.
     }
 
     /**
      * Checks if two numbers in string format are equal in value.
-     * Example: "1011b2" and "11b10" are equal (both are 11 in decimal).
+     * For example, "1011b2" and "11b10" both represent the number 11, so they are equal.
+     * Returns false if either input is invalid.
      */
     public static boolean equals(String n1, String n2) {
         if (!isNumber(n1) || !isNumber(n2)) {
-            return false; // If either number is invalid, return false.
+            return false; // Return false if either number is invalid
         }
-        return number2Int(n1) == number2Int(n2);
+        int num1 = number2Int(n1);
+        int num2 = number2Int(n2);
+        return num1 == num2; // Check if their decimal values are the same
     }
 
     /**
-     * Finds the index of the largest number in a given array.
-     * If there are multiple largest numbers, returns the first one.
-     * Example: ["1011b2", "15b10", "invalid"] -> Index 1 (15 is largest).
+     * Converts a decimal number into a string representation with the specified base.
+     * For example, 11 in base 2 would be "1011b2".
+     * Returns an empty string if the base is invalid (not between 2 and 16).
      */
-    public static int maxIndex(String[] arr) {
-        int maxIndex = -1; // Default to -1 if no valid numbers are found.
-        int maxValue = Integer.MIN_VALUE; // Smallest possible value initially.
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i] != null && isNumber(arr[i])) {
-                int value = number2Int(arr[i]);
-                if (value > maxValue) {
-                    maxValue = value;
-                    maxIndex = i;
-                }
+    public static String int2Number(int num, int base) {
+        if (base < 2 || base > 16) {
+            return ""; // Return an empty string for invalid bases
+        }
+
+        StringBuilder result = new StringBuilder();
+        int current = num;
+        do {
+            int remainder = current % base;
+            char digit = (char) (remainder < 10 ? '0' + remainder : 'A' + (remainder - 10));
+            result.insert(0, digit); // Add the digit at the start of the result
+            current /= base;
+        } while (current > 0);
+
+        return result + "b" + base; // Add the base at the end
+    }
+
+    /**
+     * Finds the index of the largest number in an array of number strings.
+     * Skips invalid numbers and returns -1 if no valid numbers are found.
+     * For example, in {"101b2", "A1b16", "15b10"}, "A1b16" (value 161) is the largest.
+     */
+    public static int maxIndex(String[] values) {
+        int maxValue = Integer.MIN_VALUE;
+        int maxIndex = -1;
+
+        for (int i = 0; i < values.length; i++) {
+            int value = number2Int(values[i]); // Convert each number to decimal
+            if (value == -1) {
+                continue; // Skip invalid numbers
+            }
+            if (value > maxValue) {
+                maxValue = value; // Update the max value
+                maxIndex = i; // Update the index of the max value
             }
         }
-        return maxIndex;
+
+        return maxIndex; // Return -1 if no valid numbers were found
     }
 }
-
-
